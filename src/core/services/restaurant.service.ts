@@ -45,7 +45,8 @@ export class RestaurantService {
     return restaurant;
   }
 
-  async findBySlug(slug: string) {
+  // 🔥 PADRONIZADO COM O CONTROLLER
+  async getBySlug(slug: string) {
     const restaurant = await prisma.restaurant.findUnique({
       where: { slug },
       include: {
@@ -81,6 +82,7 @@ export class RestaurantService {
 
   async delete(id: number) {
     try {
+      // 🔕 Por enquanto DELETE físico
       await prisma.restaurant.delete({
         where: { id },
       });

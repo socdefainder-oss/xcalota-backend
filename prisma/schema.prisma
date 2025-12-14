@@ -1,0 +1,293 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//
+// ENUMS
+//
+
+enum OrderSourceChannel {
+  WHATSAPP
+  DIRECT_LINK
+  IFOOD
+  NINENINEFOOD
+  AIQFOME
+  OTHER
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  IN_PREPARATION
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+enum VehicleType {
+  MOTORCYCLE
+  BIKE
+  CAR
+  OTHER
+}
+
+enum CourierStatus {
+  AVAILABLE
+  BUSY
+  OFFLINE
+}
+
+enum DeliveryStatus {
+  PENDING_ASSIGNMENT
+  ASSIGNED
+  PICKED_UP
+  DELIVERED
+  CANCELLED
+}
+
+enum MarketplaceProvider {
+  IFOOD
+  NINENINEFOOD
+  AIQFOME
+  WHATSAPP_BUSINESS
+  OTHER
+}
+
+enum PaymentProvider {
+  MERCADOPAGO
+  STRIPE
+  PAGSEGURO
+  PICPAY
+  OTHER
+}
+
+enum WebhookSource {
+  PAYMENT
+  MARKETPLACE
+  OTHER
+}
+
+//
+// MODELS
+//
+
+model Restaurant {
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String   @unique
+  phone     String?
+  whatsapp  String?
+  document  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products       Product[]
+  categories     ProductCategory[]
+  orders         Order[]
+  couriers       Courier[]
+  integrations   MarketplaceIntegration[]
+  paymentConfigs PaymentProviderConfig[]
+}
+
+model ProductCategory {
+  id           Int     @id @default(autoincrement())
+  restaurantId Int
+  name         String
+  description  String?
+  sortOrder    Int     @default(0)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  products   Product[]
+}
+
+model Product {
+  id           Int      @id @default(autoincrement())
+  restaurantId Int
+  categoryId   Int?
+  name         String
+  description  String?
+  price        Decimal
+  imageUrl     String?
+  isAvailable  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant Restaurant       @relation(fields: [restaurantId], references: [id])
+  category   ProductCategory? @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+}
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String?
+  whatsapp  String?
+  email     String?
+  document  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses Address[]
+  orders    Order[]
+}
+
+model Address {
+  id         Int     @id @default(autoincrement())
+  customerId Int
+  label      String?
+  street     String
+  number     String
+  complement String?
+  district   String
+  city       String
+  state      String
+  zipCode    String
+  reference  String?
+  isDefault  Boolean @default(false)
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  orders   Order[]
+}
+
+model Order {
+  id            Int                @id @default(autoincrement())
+  restaurantId  Int
+  customerId    Int
+  addressId     Int?
+  externalId    String?
+  sourceChannel OrderSourceChannel
+  status        OrderStatus        @default(PENDING)
+  paymentStatus PaymentStatus      @default(PENDING)
+  subtotal      Decimal
+  deliveryFee   Decimal            @default(0)
+  discount      Decimal            @default(0)
+  total         Decimal
+  notes         String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  paidAt        DateTime?
+
+  restaurant Restaurant           @relation(fields: [restaurantId], references: [id])
+  customer   Customer             @relation(fields: [customerId], references: [id])
+  address    Address?             @relation(fields: [addressId], references: [id])
+  items      OrderItem[]
+  delivery   Delivery?
+  payments   PaymentTransaction[]
+}
+
+model OrderItem {
+  id         Int     @id @default(autoincrement())
+  orderId    Int
+  productId  Int
+  quantity   Int
+  unitPrice  Decimal
+  totalPrice Decimal
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Courier {
+  id           Int           @id @default(autoincrement())
+  restaurantId Int
+  name         String
+  phone        String?
+  vehicleType  VehicleType
+  plate        String?
+  status       CourierStatus @default(AVAILABLE)
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+  deliveries Delivery[]
+}
+
+model Delivery {
+  id                    Int            @id @default(autoincrement())
+  orderId               Int            @unique
+  courierId             Int?
+  status                DeliveryStatus @default(PENDING_ASSIGNMENT)
+  estimatedPickupTime   DateTime?
+  estimatedDeliveryTime DateTime?
+  pickedUpAt            DateTime?
+  deliveredAt           DateTime?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  externalTrackingCode  String?
+
+  order   Order    @relation(fields: [orderId], references: [id])
+  courier Courier? @relation(fields: [courierId], references: [id])
+}
+
+model MarketplaceIntegration {
+  id              Int                 @id @default(autoincrement())
+  restaurantId    Int
+  provider        MarketplaceProvider
+  externalStoreId String?
+  apiKey          String?
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+}
+
+model PaymentProviderConfig {
+  id           Int             @id @default(autoincrement())
+  restaurantId Int
+  provider     PaymentProvider
+  publicKey    String?
+  secretKey    String?
+  webhookUrl   String?
+  isActive     Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  restaurant   Restaurant           @relation(fields: [restaurantId], references: [id])
+  transactions PaymentTransaction[]
+}
+
+model PaymentTransaction {
+  id                Int             @id @default(autoincrement())
+  orderId           Int
+  providerConfigId  Int?
+  provider          PaymentProvider
+  providerPaymentId String?
+  status            PaymentStatus   @default(PENDING)
+  amount            Decimal
+  feeAmount         Decimal         @default(0)
+  rawPayload        Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  paidAt            DateTime?
+  failReason        String?
+
+  order          Order                  @relation(fields: [orderId], references: [id])
+  providerConfig PaymentProviderConfig? @relation(fields: [providerConfigId], references: [id])
+}
+
+model WebhookEventLog {
+  id          Int           @id @default(autoincrement())
+  source      WebhookSource
+  provider    String?
+  eventType   String?
+  payload     Json
+  processed   Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  processedAt DateTime?
+}

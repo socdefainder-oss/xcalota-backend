@@ -33,6 +33,14 @@ export class RestaurantService {
     }
   }
 
+  // ✅ LISTAGEM (NOVO)
+  async list() {
+    return prisma.restaurant.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
   async findById(id: number) {
     const restaurant = await prisma.restaurant.findUnique({
       where: { id },
@@ -45,7 +53,6 @@ export class RestaurantService {
     return restaurant;
   }
 
-  // 🔥 PADRONIZADO COM O CONTROLLER
   async getBySlug(slug: string) {
     const restaurant = await prisma.restaurant.findUnique({
       where: { slug },
@@ -82,7 +89,7 @@ export class RestaurantService {
 
   async delete(id: number) {
     try {
-      // 🔕 Por enquanto DELETE físico
+      // 🔕 DELETE físico por enquanto
       await prisma.restaurant.delete({
         where: { id },
       });

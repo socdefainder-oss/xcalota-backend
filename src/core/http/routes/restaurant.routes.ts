@@ -6,10 +6,19 @@ import { createRestaurantSchema } from "../validators/restaurant.schema";
 const router = Router();
 const controller = new RestaurantController();
 
+// ✅ LISTAGEM
+router.get("/", controller.list);
+
+// ✅ CREATE
 router.post("/", validate(createRestaurantSchema), controller.create);
 
+// ✅ GET POR SLUG
 router.get("/:slug", controller.getBySlug);
+
+// ✅ UPDATE
 router.put("/:id", controller.update);
+
+// ✅ DELETE
 router.delete("/:id", controller.delete);
 
 export default router;

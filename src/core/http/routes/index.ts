@@ -3,22 +3,19 @@ import restaurantRoutes from "./restaurant.routes";
 
 const router = Router();
 
-/** DEBUG TEMPORÁRIO */
-console.log("🧩 Carregando routes/index.ts");
-
+// ✅ Health sempre simples
 router.get("/health", (_, res) => {
   res.json({ status: "ok" });
 });
 
-/** ✅ ESTA LINHA É A CHAVE */
+// ✅ Rotas de restaurantes
 router.use("/restaurants", restaurantRoutes);
 
-/** DEBUG FINAL */
-console.log(
-  "🚀 Rotas carregadas:",
-  router.stack
-    .filter((r: any) => r.route)
-    .map((r: any) => r.route.path)
-);
+/**
+ * DEBUG ÚTIL (opcional):
+ * Mostra as rotas registradas (incluindo routers montados)
+ * Ative somente se precisar, pois polui logs.
+ */
+// console.log("🚀 Router /api stack:", router.stack.map((l: any) => l?.name || l?.route?.path));
 
 export default router;

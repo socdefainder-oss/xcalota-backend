@@ -6,6 +6,11 @@ import { createRestaurantSchema } from "../validators/restaurant.schema";
 const router = Router();
 const controller = new RestaurantController();
 
+/**
+ * Rotas de restaurantes
+ * Base: /restaurants (o /api vem do app.ts/server.ts)
+ */
+
 // ✅ LISTAGEM
 router.get("/", controller.list);
 

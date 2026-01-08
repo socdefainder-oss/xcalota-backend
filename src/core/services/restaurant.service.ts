@@ -36,7 +36,6 @@ export class RestaurantService {
   // ✅ LISTAGEM (NOVO)
   async list() {
     return prisma.restaurant.findMany({
-      where: { isActive: true },
       orderBy: { createdAt: "desc" },
     });
   }
